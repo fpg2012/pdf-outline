@@ -1,0 +1,7 @@
+pindf
+*.o
+*.dylib
+pdf-outline
+.vscode
+*.dSYM
+*.pch
