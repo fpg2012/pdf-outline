@@ -41,39 +41,49 @@ void OutlineNode::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_ma
     pindf_pdf_obj *dest = pindf_dict_getvalue2(&obj->content.dict, "/Dest");
     if (dest != nullptr && dest->obj_type == PINDF_PDF_ARRAY) {
         page = extract_page_number(doc, page_map, dest);
-    } else {
-        // action
-        pindf_pdf_obj *action = pindf_dict_getvalue2(&obj->content.dict, "/A");
-        action = deref(doc, action);
-        if (action != nullptr) {
-            pindf_pdf_obj *s = pindf_dict_getvalue2(&action->content.dict, "/S");
-            s = deref(doc, s);
-            
-            if (s != nullptr) {
-                if (s->obj_type == PINDF_PDF_NAME && pindf_uchar_str_cmp3(s->content.name, "/GoTo") == 0) {
-                    pindf_pdf_obj *d = pindf_dict_getvalue2(&action->content.dict, "/D");
-                    d = deref(doc, d);
-                    if (d != nullptr && d->obj_type == PINDF_PDF_ARRAY) {
-                        page = extract_page_number(doc, page_map, d);
-                    } else if (d != nullptr && (d->obj_type == PINDF_PDF_LTR_STR || d->obj_type == PINDF_PDF_HEX_STR)) {
-                        std::string name = pindf_uchar_str_to_string(d->content.ltr_str);
-                        pindf_pdf_obj *final_dest = name_tree->get_dest(name);
-                        if (final_dest != nullptr && final_dest->obj_type == PINDF_PDF_DICT) {
-                            pindf_pdf_obj *d = pindf_dict_getvalue2(&final_dest->content.dict, "/D");
-                            d = deref(doc, d);
-                            if (d != nullptr && d->obj_type == PINDF_PDF_ARRAY) {
-                                page = extract_page_number(doc, page_map, d);
-                            } else {
-                                std::cerr << "destination is not an array" << std::endl;
-                            }
-                        } else {
-                            std::cerr << "cannot find key: " << name << std::endl;
-                        }
-                    }
-                } else {
-                    std::cerr << "Warning: outline node action is not GoTo" << std::endl;
-                }
-            }
+        return;
+    }
+    // action
+    pindf_pdf_obj *action = pindf_dict_getvalue2(&obj->content.dict, "/A");
+    action = deref(doc, action);
+    if (action == nullptr) {
+        std::cerr << "Warning: outline node has no action" << std::endl;
+        return;
+    }
+    pindf_pdf_obj *s = pindf_dict_getvalue2(&action->content.dict, "/S");
+    s = deref(doc, s);
+
+    if (s == nullptr) {
+        std::cerr << "Warning: outline node action has no S" << std::endl;
+        return;
+    }
+
+    if (s->obj_type != PINDF_PDF_NAME || pindf_uchar_str_cmp3(s->content.name, "/GoTo") != 0) {
+        std::cerr << "Warning: outline node action S is not a name" << std::endl;
+        return;
+    }
+    
+    pindf_pdf_obj *d = pindf_dict_getvalue2(&action->content.dict, "/D");
+    d = deref(doc, d);
+    if (d != nullptr && d->obj_type == PINDF_PDF_ARRAY) {
+        page = extract_page_number(doc, page_map, d);
+        return;
+    }
+    // handle named destination
+    if (d != nullptr && (d->obj_type == PINDF_PDF_LTR_STR || d->obj_type == PINDF_PDF_HEX_STR)) {
+        std::string name = pindf_uchar_str_to_string(d->content.ltr_str);
+        pindf_pdf_obj *final_dest = name_tree->get_dest(name);
+
+        if (final_dest == nullptr || final_dest->obj_type != PINDF_PDF_DICT) {
+            std::cerr << "cannot find key: " << name << std::endl;
+            return;
+        }
+        d = pindf_dict_getvalue2(&final_dest->content.dict, "/D");
+        d = deref(doc, d);
+        if (d != nullptr && d->obj_type == PINDF_PDF_ARRAY) {
+            page = extract_page_number(doc, page_map, d);
+        } else {
+            std::cerr << "destination is not an array" << std::endl;
         }
     }
 }
