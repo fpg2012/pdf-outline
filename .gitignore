@@ -5,3 +5,6 @@ pdf-outline
 .vscode
 *.dSYM
 *.pch
+*.json
+.clangd
+*.toml

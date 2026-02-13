@@ -3,11 +3,13 @@
 #include <cstring>
 
 #include <iostream>
+#include <fstream>
 
 #include "utils.hpp"
 #include "name_tree.hpp"
 #include "outline.hpp"
 #include "page_tree.hpp"
+#include <nlohmann/json.hpp>
 
 extern "C" {
 #include "pindf/pindf.h"
@@ -55,6 +57,12 @@ int main(int argc, const char **argv)
     std::cout << "=== " << "print outline 2" << " ===" << std::endl;
     OutlineNode *outline = get_outline(doc, name_tree, page_map);
     outline->print();
+
+    // save to json
+    std::ofstream out("outline.json");
+    out << outline->to_simple_json().dump(4);
+    
+    // outline->save_detailed_toml("outline_detailed.toml");
 
     // clean up
     delete name_tree;

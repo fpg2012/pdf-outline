@@ -5,6 +5,7 @@ CXXFLAGS := -std=c++17 -Wall
 
 CXXFLAGS += $(shell pkg-config --cflags icu-uc icu-io)
 CXXFLAGS += -I./pindf
+CXXFLAGS += $(shell pkg-config --cflags nlohmann_json)
 
 LD_FLAGS += -L./pindf -lpindf
 LD_FLAGS += $(shell pkg-config --libs icu-uc icu-io)

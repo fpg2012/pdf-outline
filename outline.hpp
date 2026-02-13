@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <nlohmann/json.hpp>
 extern "C" {
 #include "pindf/pindf.h"
 }
@@ -19,6 +20,12 @@ struct OutlineNode {
     void from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_map, pindf_pdf_obj *obj);
 
     void print(int depth = 0);
+
+    nlohmann::json to_json() const;
+    nlohmann::json to_simple_json() const;
+
+    void save_simple_json(const std::string &filename) const;
+    void save_detailed_json(const std::string &filename) const;
 };
 
 void print_outline(pindf_doc *doc);

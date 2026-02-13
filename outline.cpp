@@ -1,4 +1,5 @@
 #include "outline.hpp"
+#include "nlohmann/json.hpp"
 
 void OutlineNode::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_map, pindf_pdf_obj *obj) {
     assert(name_tree != nullptr);
@@ -188,4 +189,22 @@ int extract_page_number(pindf_doc *doc, PageMap *page_map, pindf_pdf_obj *obj) {
     page = page_map->get_index(obj_num);
 
     return page;
+}
+
+nlohmann::json OutlineNode::to_simple_json() const {
+    nlohmann::json j;
+    if (!children.empty()) {
+        j = nlohmann::json::array();
+        for (const auto &child : children) {
+            j.push_back(child.to_simple_json());
+        }
+        return j;
+    }
+    if (!title.empty()) {
+        j["title"] = title;
+    }
+    if (destination.page != -1) {
+        j["page"] = destination.page;
+    }
+    return j;
 }
