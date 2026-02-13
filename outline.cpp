@@ -27,7 +27,6 @@ void OutlineNode::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_ma
     title_obj = deref(doc, title_obj);
     if (title_obj != nullptr) {
         if (title_obj->obj_type == PINDF_PDF_LTR_STR || title_obj->obj_type == PINDF_PDF_HEX_STR) {
-            // title = pindf_uchar_str_to_string(title_obj->content.ltr_str);
             title = decode_text_string(title_obj->content.ltr_str);
         } else {
             std::cerr << "Warning: outline node title is not a string, but " << title_obj->obj_type << std::endl;
@@ -36,13 +35,13 @@ void OutlineNode::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_ma
         std::cerr << "Warning: outline node has no title" << std::endl;
     }
 
-    // parse page
-    page = -1;
+    // direct destination
     pindf_pdf_obj *dest = pindf_dict_getvalue2(&obj->content.dict, "/Dest");
-    if (dest != nullptr && dest->obj_type == PINDF_PDF_ARRAY) {
-        page = extract_page_number(doc, page_map, dest);
+    if (dest != nullptr) {
+        destination.from_obj(doc, name_tree, page_map, dest);
         return;
     }
+
     // action
     pindf_pdf_obj *action = pindf_dict_getvalue2(&obj->content.dict, "/A");
     action = deref(doc, action);
@@ -65,27 +64,7 @@ void OutlineNode::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_ma
     
     pindf_pdf_obj *d = pindf_dict_getvalue2(&action->content.dict, "/D");
     d = deref(doc, d);
-    if (d != nullptr && d->obj_type == PINDF_PDF_ARRAY) {
-        page = extract_page_number(doc, page_map, d);
-        return;
-    }
-    // handle named destination
-    if (d != nullptr && (d->obj_type == PINDF_PDF_LTR_STR || d->obj_type == PINDF_PDF_HEX_STR)) {
-        std::string name = pindf_uchar_str_to_string(d->content.ltr_str);
-        pindf_pdf_obj *final_dest = name_tree->get_dest(name);
-
-        if (final_dest == nullptr || final_dest->obj_type != PINDF_PDF_DICT) {
-            std::cerr << "cannot find key: " << name << std::endl;
-            return;
-        }
-        d = pindf_dict_getvalue2(&final_dest->content.dict, "/D");
-        d = deref(doc, d);
-        if (d != nullptr && d->obj_type == PINDF_PDF_ARRAY) {
-            page = extract_page_number(doc, page_map, d);
-        } else {
-            std::cerr << "destination is not an array" << std::endl;
-        }
-    }
+    destination.from_obj(doc, name_tree, page_map, d);
 }
 
 void _print_outline(pindf_doc *doc, pindf_pdf_obj *outline_obj, int depth = 0)
@@ -151,7 +130,7 @@ void print_outline(pindf_doc *doc) {
 
 void OutlineNode::print(int depth) {
     std::cout << std::string(depth * 4, ' ') << "Title: " << title << std::endl;
-    std::cout << std::string(depth * 4, ' ') << "Page: " << page << std::endl;
+    std::cout << std::string(depth * 4, ' ') << "Page: " << destination.page << std::endl;
     for (auto& child : children) {
         child.print(depth + 1);
     }

@@ -9,7 +9,7 @@ CXXFLAGS += -I./pindf
 LD_FLAGS += -L./pindf -lpindf
 LD_FLAGS += $(shell pkg-config --libs icu-uc icu-io)
 
-SRC := main.cpp outline.cpp utils.cpp name_tree.cpp page_tree.cpp
+SRC := *.cpp
 
 ifeq ($(BUILD_TYPE_LOWER),debug)
 CXXFLAGS += -g

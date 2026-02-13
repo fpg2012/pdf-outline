@@ -59,5 +59,6 @@ int main(int argc, const char **argv)
     // clean up
     delete name_tree;
     delete outline;
+    delete page_map;
     return 0;
 }
