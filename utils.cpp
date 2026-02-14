@@ -95,6 +95,18 @@ void log_obj(pindf_pdf_obj *obj) {
     pindf_uchar_str_destroy(&obj_str);
 }
 
+std::string obj_to_string(pindf_pdf_obj *obj) {
+    pindf_uchar_str obj_str;
+    pindf_uchar_str_init(&obj_str, 1000);
+    char *end = pindf_pdf_obj_serialize(obj, (char*)obj_str.p, obj_str.len);
+    obj_str.len = end - (char*)obj_str.p;
+    
+    std::string str = pindf_uchar_str_to_string(&obj_str);
+
+    pindf_uchar_str_destroy(&obj_str);
+    return str;
+}
+
 pindf_pdf_obj *get_catalog(pindf_doc *doc) {
     pindf_pdf_obj *root = pindf_dict_getvalue2(&doc->trailer, "/Root");
     root = deref(doc, root);

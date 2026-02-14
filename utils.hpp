@@ -30,3 +30,5 @@ void utf16_to_utf8(pindf_uchar_str *str);
 std::string decode_text_string(pindf_uchar_str *str);
 
 std::string pindf_uchar_str_to_string(pindf_uchar_str *str);
+
+std::string obj_to_string(pindf_pdf_obj *obj);
