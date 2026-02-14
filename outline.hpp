@@ -23,9 +23,6 @@ struct OutlineNode {
 
     nlohmann::json to_json() const;
     nlohmann::json to_simple_json() const;
-
-    void save_simple_json(const std::string &filename) const;
-    void save_detailed_json(const std::string &filename) const;
 };
 
 void print_outline(pindf_doc *doc);

@@ -60,7 +60,11 @@ int main(int argc, const char **argv)
 
     // save to json
     std::ofstream out("outline.json");
-    out << outline->to_simple_json().dump(4);
+    out << outline->to_simple_json().dump(2);
+    out.close();
+    out.open("outline_full.json");
+    out << outline->to_json().dump(2);
+    out.close();
     
     // outline->save_detailed_toml("outline_detailed.toml");
 

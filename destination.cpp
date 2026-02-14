@@ -6,6 +6,7 @@ void Destination::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_ma
     assert(doc != nullptr);
 
     dest = deref(doc, dest);
+    dest_obj = dest;
 
     if (dest == nullptr || (dest->obj_type != PINDF_PDF_ARRAY && dest->obj_type != PINDF_PDF_LTR_STR && dest->obj_type != PINDF_PDF_HEX_STR)) {
         return;
@@ -43,4 +44,15 @@ void Destination::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_ma
         std::cerr << "Unknown destination type: " << dest->obj_type << std::endl;
         return;
     }
+}
+
+nlohmann::json Destination::to_json() const {
+    nlohmann::json j;
+    j["dest_arr"] = obj_to_string(dest_obj);
+    j["page_ref"] = obj_to_string(page_obj);
+    j["page"] = page;
+    if (!name.empty()) {
+        j["name"] = name;
+    }
+    return j;
 }

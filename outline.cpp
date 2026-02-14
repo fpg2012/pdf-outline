@@ -208,3 +208,19 @@ nlohmann::json OutlineNode::to_simple_json() const {
     }
     return j;
 }
+
+nlohmann::json OutlineNode::to_json() const {
+    nlohmann::json j;
+    if (!children.empty()) {
+        j = nlohmann::json::array();
+        for (const auto &child : children) {
+            j.push_back(child.to_json());
+        }
+        return j;
+    }
+    if (!title.empty()) {
+        j["title"] = title;
+    }
+    j["destination"] = destination.to_json();
+    return j;
+}
