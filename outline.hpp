@@ -23,7 +23,11 @@ struct OutlineNode {
 
     nlohmann::json to_json() const;
     nlohmann::json to_simple_json() const;
+
+    void from_json(const nlohmann::json &j);
 };
 
 void print_outline(pindf_doc *doc);
 OutlineNode *get_outline(pindf_doc *doc, NameTree *name_tree, PageMap *page_map);
+
+pindf_modif *to_modification(pindf_doc *doc, OutlineNode *node);

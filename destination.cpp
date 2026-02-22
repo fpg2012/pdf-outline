@@ -56,3 +56,36 @@ nlohmann::json Destination::to_json() const {
     }
     return j;
 }
+
+void Destination::from_json(const nlohmann::json &j) {
+    if (j.contains("page")) {
+        page = j["page"];
+    }
+    if (j.contains("name")) {
+        name = j["name"];
+    }
+    std::string page_ref_str = j["page_ref"];
+    std::string dest_arr_str = j["dest_arr"];
+    
+    auto parser = pindf_parser_new();
+    auto lexer = pindf_lexer_new();
+
+    pindf_pdf_obj *obj = nullptr;
+    auto buffer = pindf_uchar_str_from_cstr(page_ref_str.c_str(), page_ref_str.length());
+    pindf_parse_one_obj_from_buffer(parser, lexer, buffer, 0, &obj, NULL, PINDF_PDF_REF);
+    pindf_uchar_str_destroy(buffer);
+    free(buffer);
+    page_obj = obj;
+
+    buffer = pindf_uchar_str_from_cstr(dest_arr_str.c_str(), dest_arr_str.length());
+    pindf_parse_one_obj_from_buffer(parser, lexer, buffer, 0, &obj, NULL, PINDF_PDF_REF);
+    pindf_uchar_str_destroy(buffer);
+    free(buffer);
+    dest_obj = obj;
+
+    // clean up
+    pindf_lexer_clear(lexer);
+    pindf_parser_destroy(parser);
+    free(parser);
+    free(lexer);
+}

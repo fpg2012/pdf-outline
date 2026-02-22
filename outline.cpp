@@ -224,3 +224,35 @@ nlohmann::json OutlineNode::to_json() const {
     j["destination"] = destination.to_json();
     return j;
 }
+
+void OutlineNode::from_json(const nlohmann::json &j) {
+    if (j.is_array()) {
+        for (const auto &child : j) {
+            OutlineNode node;
+            node.from_json(child);
+            children.push_back(node);
+        }
+    } else if (j.is_object()) {
+        if (j.contains("title")) {
+            title = j["title"];
+        }
+        if (j.contains("destination")) {
+            destination.from_json(j["destination"]);
+        } else {
+            std::cerr << "No destination found!" << std::endl;
+        }
+    }
+}
+
+pindf_modif *to_modification(pindf_doc *doc, OutlineNode *node, PageMap *page_map) {
+    int64 max_obj_num = doc->xref ? doc->xref->size : 0;
+    assert(max_obj_num > 0);
+    pindf_modif *modif = pindf_modif_new(max_obj_num);
+
+    // add outline tree
+
+    // add name tree
+
+    // add catalog
+    return modif;
+}

@@ -3,6 +3,7 @@
 #include "utils.hpp"
 
 void NameTree::from_obj(pindf_doc *doc, pindf_pdf_obj *obj) {
+    name_tree_obj = obj;
     obj = deref(doc, obj);
     // debug
     std::cout << "name tree loading: " << std::endl;
@@ -99,4 +100,45 @@ pindf_pdf_obj* NameTree::get_dest(const std::string& name) {
         return nullptr;
     }
     return it->second;
+}
+
+nlohmann::json _to_json(pindf_doc *doc, pindf_pdf_obj *obj) {
+    obj = deref(doc, obj);
+    if (obj == nullptr) {
+        std::cerr << "Name tree object is null" << std::endl;
+        return {};
+    }
+
+    pindf_pdf_obj *kids = pindf_dict_getvalue2(&obj->content.dict, "/Kids");
+    kids = deref(doc, kids);
+
+    // not a leaf
+    if (kids != nullptr) {
+        nlohmann::json j = nlohmann::json::array();
+        if (kids->obj_type != PINDF_PDF_ARRAY) {
+            std::cerr << "Kids is not an array" << std::endl;
+            return {};
+        }
+        std::vector<pindf_pdf_obj*> vec = pindf_vector_to_std_vector<pindf_pdf_obj*>(kids->content.array);
+        for (pindf_pdf_obj *kid : vec) {
+            j.push_back(_to_json(doc, kid));
+        }
+        return j;
+    }
+
+    // leaf
+    pindf_pdf_obj *names = pindf_dict_getvalue2(&obj->content.dict, "/Names");
+    names = deref(doc, names);
+    if (names == nullptr) {
+        std::cerr << "Names is null" << std::endl;
+        return {};
+    }
+    
+    nlohmann::json j;
+    j["obj"] = obj_to_string(obj);
+    return j;
+}
+
+nlohmann::json NameTree::to_json(pindf_doc *doc) {
+    return _to_json(doc, this->name_tree_obj);
 }

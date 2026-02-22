@@ -66,7 +66,20 @@ int main(int argc, const char **argv)
     out << outline->to_json().dump(2);
     out.close();
     
-    // outline->save_detailed_toml("outline_detailed.toml");
+    // try load from json
+    std::cout << "=== " << "parse outline from json" << " ===" << std::endl;
+    OutlineNode new_outline;
+    std::fstream json_file("outline_full.json");
+    nlohmann::json j;
+    json_file >> j;
+    new_outline.from_json(j);
+    new_outline.print();
+
+    // save name_tree to json
+    std::cout << "=== " << "save name tree to json" << " ===" << std::endl;
+    std::ofstream nt_file("nt.json");
+    auto nt_j = name_tree->to_json(doc);
+    nt_file << nt_j.dump(2);
 
     // clean up
     delete name_tree;
