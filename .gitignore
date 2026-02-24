@@ -8,3 +8,7 @@ pdf-outline
 *.json
 .clangd
 *.toml
+.cache/
+*.pdf
+test_modif
+*.txt

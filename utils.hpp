@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdexcept>
 #include <vector>
 extern "C" {
 #include "pindf/pindf.h"
@@ -17,6 +18,11 @@ std::vector<T> pindf_vector_to_std_vector(pindf_vector *vector) {
     return stdvec;
 }
 
+template<typename T>
+pindf_pdf_obj *to_obj(T value) {
+    throw std::runtime_error("not implemented");
+}
+
 pindf_pdf_obj *deref(pindf_doc *doc, pindf_pdf_obj *obj);
 
 pindf_doc *parse_pdf(const char *filename);
@@ -28,6 +34,7 @@ pindf_pdf_obj *get_catalog(pindf_doc *doc);
 void utf16_to_utf8(pindf_uchar_str *str);
 
 std::string decode_text_string(pindf_uchar_str *str);
+std::string encode_text_string(const std::string& str);
 
 std::string pindf_uchar_str_to_string(pindf_uchar_str *str);
 

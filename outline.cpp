@@ -1,5 +1,7 @@
 #include "outline.hpp"
 #include "nlohmann/json.hpp"
+#include "utils.hpp"
+#include <stdexcept>
 
 void OutlineNode::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_map, pindf_pdf_obj *obj) {
     assert(name_tree != nullptr);
@@ -20,7 +22,6 @@ void OutlineNode::from_obj(pindf_doc *doc, NameTree *name_tree, PageMap *page_ma
             next = deref(doc, next);
             first = next;
         }
-        return;
     }
 
     // a leaf
@@ -137,7 +138,7 @@ void OutlineNode::print(int depth) {
     }
 }
 
-OutlineNode *get_outline(pindf_doc *doc, NameTree *name_tree, PageMap *page_map) {
+pindf_pdf_obj *get_outline_obj(pindf_doc *doc) {
     // get root/catalog
     pindf_pdf_obj *root = pindf_dict_getvalue2(&doc->trailer, "/Root");
     root = deref(doc, root);
@@ -148,11 +149,20 @@ OutlineNode *get_outline(pindf_doc *doc, NameTree *name_tree, PageMap *page_map)
 
     // get outlines
     pindf_pdf_obj *outlines = pindf_dict_getvalue2(&root->content.dict, "/Outlines");
-    outlines = deref(doc, outlines);
     if (outlines == nullptr) {
         std::cerr << "Failed to get outlines object" << std::endl;
         return nullptr;
     }
+    return outlines;
+}
+
+OutlineNode *get_outline(pindf_doc *doc, NameTree *name_tree, PageMap *page_map) {
+    pindf_pdf_obj *outlines = get_outline_obj(doc);
+    if (outlines == nullptr) {
+        return nullptr;
+    }
+
+    outlines = deref(doc, outlines);
     
     OutlineNode *outline = new OutlineNode();
     outline->from_obj(doc, name_tree, page_map, outlines);
@@ -211,48 +221,184 @@ nlohmann::json OutlineNode::to_simple_json() const {
 
 nlohmann::json OutlineNode::to_json() const {
     nlohmann::json j;
-    if (!children.empty()) {
-        j = nlohmann::json::array();
-        for (const auto &child : children) {
-            j.push_back(child.to_json());
-        }
-        return j;
-    }
     if (!title.empty()) {
         j["title"] = title;
     }
-    j["destination"] = destination.to_json();
+    if (!children.empty()) {
+        nlohmann::json chd = nlohmann::json::array();
+        for (const auto &child : children) {
+            chd.push_back(child.to_json());
+        }
+        j["chd"] = chd;
+    }
+    if (destination.page != -1) {
+        j["destination"] = destination.to_json();
+    }
     return j;
 }
 
-void OutlineNode::from_json(const nlohmann::json &j) {
-    if (j.is_array()) {
-        for (const auto &child : j) {
-            OutlineNode node;
-            node.from_json(child);
-            children.push_back(node);
-        }
-    } else if (j.is_object()) {
+void OutlineNode::from_json(const nlohmann::json &j, const PageMap *page_map) {
+    if (j.is_object()) {
         if (j.contains("title")) {
             title = j["title"];
         }
         if (j.contains("destination")) {
-            destination.from_json(j["destination"]);
-        } else {
-            std::cerr << "No destination found!" << std::endl;
+            destination.from_json(j["destination"], page_map);
+        }
+        if (j.contains("chd")) {
+            for (const auto &child : j["chd"]) {
+                OutlineNode node;
+                node.from_json(child, page_map);
+                children.push_back(node);
+            }
         }
     }
 }
 
-pindf_modif *to_modification(pindf_doc *doc, OutlineNode *node, PageMap *page_map) {
-    int64 max_obj_num = doc->xref ? doc->xref->size : 0;
-    assert(max_obj_num > 0);
-    pindf_modif *modif = pindf_modif_new(max_obj_num);
+int to_temp(const OutlineNode *outline_node, std::vector<TempOutlineNode*> &nodes, int offset) {
+    TempOutlineNode *node = new TempOutlineNode();
+    std::vector<TempOutlineNode*> temp_vec;
+    if (outline_node->children.size() > 0) {
+        auto new_offset = offset;
+        for (int i = 0; i < outline_node->children.size(); ++i) {
+            new_offset = to_temp(&outline_node->children[i], nodes, new_offset);
+            temp_vec.push_back(nodes[new_offset]);
+        }
+        for (int i = 0; i < temp_vec.size(); ++i) {
+            if (i > 0)
+                temp_vec[i]->last = temp_vec[i-1]->offset;
+            if (i < temp_vec.size() - 1)
+                temp_vec[i]->next = temp_vec[i+1]->offset;
+        }
+        node->first = temp_vec[0]->offset;
+        node->last = temp_vec[temp_vec.size() - 1]->offset;
+    }
+    node->node = outline_node;
+    node->offset = nodes.size();
+    node->parent = node->offset;
+    for (auto child : temp_vec) {
+        child->parent = node->offset;
+    }
+    nodes.push_back(node);
+    return node->offset;
+}
 
-    // add outline tree
+void OutlineNode::apply_modif(pindf_doc *doc, pindf_modif *modif, const PageMap *page_map) const {
+    assert(doc != nullptr);
+    assert(modif != nullptr);
 
-    // add name tree
+    std::vector<TempOutlineNode*> nodes;
+    to_temp(this, nodes, modif->max_obj_num);
 
-    // add catalog
-    return modif;
+    int real_offset = modif->max_obj_num + 1;
+
+    int obj_num_last = 0;
+    
+    for (auto node : nodes) {
+        pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_DICT);
+        pindf_pdf_dict temp_dict;
+        pindf_pdf_dict_init(&temp_dict);
+
+        {
+            if (!node->node->title.empty()) {
+                auto encoded_title = encode_text_string(node->node->title);
+                pindf_dict_set_value2(&temp_dict, "/Title", to_obj<const std::string&>(encoded_title));
+            }
+
+            if (node->first != -1) {
+                pindf_pdf_obj *first_obj = pindf_pdf_obj_new(PINDF_PDF_REF);
+                first_obj->content.ref = {
+                    .obj_num = real_offset + node->first,
+                    .generation_num = 0
+                };
+                pindf_dict_set_value2(&temp_dict, "/First", first_obj);
+
+                pindf_pdf_obj *last_obj = pindf_pdf_obj_new(PINDF_PDF_REF);
+                last_obj->content.ref = {
+                    .obj_num = real_offset + node->last,
+                    .generation_num = 0,
+                };
+                pindf_dict_set_value2(&temp_dict, "/Last", last_obj);
+
+                pindf_pdf_obj *count_obj = to_obj<int>(children.size());
+                pindf_dict_set_value2(&temp_dict, "/Count", count_obj);
+            }
+
+            pindf_pdf_obj *parent_obj = pindf_pdf_obj_new(PINDF_PDF_REF);
+            parent_obj->content.ref = {
+                .obj_num = real_offset + node->parent,
+                .generation_num = 0,
+            };
+            pindf_dict_set_value2(&temp_dict, "/Parent", parent_obj);
+
+            // set next
+            if (node->next != -1) {
+                pindf_pdf_obj *next_obj = pindf_pdf_obj_new(PINDF_PDF_REF);
+                next_obj->content.ref = {
+                    .obj_num = real_offset + node->next,
+                    .generation_num = 0,
+                };
+                pindf_dict_set_value2(&temp_dict, "/Next", next_obj);
+            }
+            // set prev
+            if (node->prev != -1) {
+                pindf_pdf_obj *prev_obj = pindf_pdf_obj_new(PINDF_PDF_REF);
+                prev_obj->content.ref = {
+                    .obj_num = real_offset + node->prev,
+                    .generation_num = 0,
+                };
+                pindf_dict_set_value2(&temp_dict, "/Prev", prev_obj);
+            }
+            // set dest
+            if (node->node->destination.page != -1) {
+                pindf_pdf_obj *dest_obj = node->node->destination.to_obj(doc, page_map);
+                pindf_dict_set_value2(&temp_dict, "/Dest", dest_obj);
+            }
+
+            // set type
+            if (node->offset == node->parent) {
+                pindf_pdf_obj *type_obj = pindf_pdf_obj_new(PINDF_PDF_NAME);
+                pindf_uchar_str *str = pindf_uchar_str_from_cstr("/Outlines", strlen("/Outlines"));
+                type_obj->content.name = str;
+                pindf_dict_set_value2(&temp_dict, "/Type", type_obj);
+            }
+        }
+
+        obj->content.dict = temp_dict;
+        
+        pindf_pdf_ind_obj *ind_obj = new pindf_pdf_ind_obj{
+            .obj_num = real_offset + node->offset,
+            .generation_num = 0,
+            .obj = obj,
+            .start_pos = 0,
+        };
+        obj_num_last = real_offset + node->offset;
+        pindf_modif_addentry(modif, ind_obj, real_offset + node->offset);
+    }
+
+    pindf_pdf_obj *root = pindf_dict_getvalue2(&doc->trailer, "/Root");
+    if (root == nullptr || root->obj_type != PINDF_PDF_REF) {
+        throw std::runtime_error("root object is invalid");
+    }
+    int root_num = root->content.ref.obj_num;
+    auto real_root = deref(doc, root);
+    if (real_root == nullptr || real_root->obj_type != PINDF_PDF_DICT) {
+        throw std::runtime_error("root object is not a dict");
+    }
+    
+    pindf_pdf_obj *new_outline_ref_obj = pindf_pdf_obj_new(PINDF_PDF_REF);
+    new_outline_ref_obj->content.ref = {
+        .obj_num = obj_num_last,
+        .generation_num = 0,
+    };
+    pindf_dict_set_value2(&real_root->content.dict, "/Outlines", new_outline_ref_obj);
+
+    auto *root_ind = new pindf_pdf_ind_obj{
+        .obj_num = root_num,
+        .generation_num = 0,
+        .obj = real_root,
+        .start_pos = 0,
+    };
+
+    pindf_modif_addentry(modif, root_ind, root_num);
 }

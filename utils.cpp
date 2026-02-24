@@ -171,6 +171,61 @@ std::string decode_text_string(pindf_uchar_str *str) {
     return codepoints_to_utf8(pdfdocenc_to_unicode(str->p, str->len));
 }
 
+std::string encode_text_string(const std::string& str) {
+    icu::UnicodeString u = icu::UnicodeString::fromUTF8(str);
+
+    std::string out;
+    out.reserve(2 + u.length() * 2);
+
+    out.push_back(static_cast<char>(0xFE));
+    out.push_back(static_cast<char>(0xFF));
+
+    for (int32_t i = 0; i < u.length(); ++i) {
+        uint16_t w = u[i];
+
+        out.push_back(static_cast<char>(w >> 8));     // high byte
+        out.push_back(static_cast<char>(w & 0xFF));   // low byte
+    }
+
+    return out;
+}
+
 std::string pindf_uchar_str_to_string(pindf_uchar_str *str) {
     return std::string((char*)str->p, str->len);
+}
+
+template<>
+pindf_pdf_obj *to_obj<int>(int value) {
+    pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_INT);
+    obj->content.num = value;
+    return obj;
+}
+
+template<>
+pindf_pdf_obj *to_obj<double>(double value) {
+    pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_REAL);
+    obj->content.real_num = value;
+    return obj;
+}
+
+template<>
+pindf_pdf_obj *to_obj<float>(float value) {
+    pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_REAL);
+    obj->content.real_num = (double)value;
+    return obj;
+}
+
+template<>
+pindf_pdf_obj *to_obj<pindf_pdf_obj*>(pindf_pdf_obj* value) {
+    return value;
+}
+
+template<>
+pindf_pdf_obj *to_obj<const std::string&>(const std::string &value) {
+    pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_LTR_STR);
+    pindf_uchar_str *str = pindf_uchar_str_new();
+    pindf_uchar_str_init(str, value.length());
+    memcpy(str->p, value.c_str(), value.length());
+    obj->content.ltr_str = str;
+    return obj;
 }

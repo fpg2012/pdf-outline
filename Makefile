@@ -1,7 +1,8 @@
 BUILD_TYPE ?= debug
 BUILD_TYPE_LOWER := $(shell echo $(BUILD_TYPE) | tr '[:upper:]' '[:lower:]')
-CXX := clang++
-CXXFLAGS := -std=c++17 -Wall
+CC = llvm-g++ -stdlib=libc++ -std=c++17
+# CXX := clang++
+CXXFLAGS := -Wall --std=c++17
 
 CXXFLAGS += $(shell pkg-config --cflags icu-uc icu-io)
 CXXFLAGS += -I./pindf
@@ -10,7 +11,7 @@ CXXFLAGS += $(shell pkg-config --cflags nlohmann_json)
 LD_FLAGS += -L./pindf -lpindf
 LD_FLAGS += $(shell pkg-config --libs icu-uc icu-io)
 
-SRC := *.cpp
+SRC := destination.cpp name_tree.cpp outline.cpp page_tree.cpp utils.cpp
 
 ifeq ($(BUILD_TYPE_LOWER),debug)
 CXXFLAGS += -g
@@ -18,8 +19,9 @@ endif
 
 all:
 	make -C pindf BUILD_TYPE=$(BUILD_TYPE)
-	$(CXX) $(CXXFLAGS) -std=c++17 -c $(SRC)
-	$(CXX) $(CXXFLAGS) $(LD_FLAGS) -o pdf-outline *.o
+	$(CC) $(CXXFLAGS) $(LD_FLAGS) $(SRC) main.cpp -o pdf-outline
+	$(CC) $(CXXFLAGS) $(LD_FLAGS) $(SRC) test_modif.cpp -o test_modif
+# 	$(CC) $(CXXFLAGS) $(LD_FLAGS) -o pdf-outline *.o
 
 clean:
 	make -C pindf BUILD_TYPE=$(BUILD_TYPE) clean

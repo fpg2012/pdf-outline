@@ -35,9 +35,9 @@ int main(int argc, const char **argv)
         return -1;
     }
 
-    std::cout << "Parsed PDF successfully" << std::endl;
-    std::cout << "xref_offset: " << doc->xref_offset << std::endl;
-    std::cout << "trailer entries " << doc->trailer.keys->len << std::endl;
+    // std::cout << "Parsed PDF successfully" << std::endl;
+    // std::cout << "xref_offset: " << doc->xref_offset << std::endl;
+    // std::cout << "trailer entries " << doc->trailer.keys->len << std::endl;
 
     std::cout << "=== " << "print outline 1" << " ===" << std::endl;
     print_outline(doc);
@@ -52,7 +52,7 @@ int main(int argc, const char **argv)
     // name tree
     std::cout << "=== " << "name tree" << " ===" << std::endl;
     NameTree *name_tree = get_name_tree(doc);
-    name_tree->print();
+    // name_tree->print();
 
     std::cout << "=== " << "print outline 2" << " ===" << std::endl;
     OutlineNode *outline = get_outline(doc, name_tree, page_map);
@@ -72,8 +72,14 @@ int main(int argc, const char **argv)
     std::fstream json_file("outline_full.json");
     nlohmann::json j;
     json_file >> j;
-    new_outline.from_json(j);
+    new_outline.from_json(j, page_map);
     new_outline.print();
+
+    // save back to json
+    std::cout << "=== " << "save back to json" << " ===" << std::endl;
+    std::ofstream out3("outline3.json");
+    out3 << new_outline.to_json().dump(2);
+    out3.close();
 
     // save name_tree to json
     std::cout << "=== " << "save name tree to json" << " ===" << std::endl;

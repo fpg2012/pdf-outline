@@ -6,9 +6,9 @@ void NameTree::from_obj(pindf_doc *doc, pindf_pdf_obj *obj) {
     name_tree_obj = obj;
     obj = deref(doc, obj);
     // debug
-    std::cout << "name tree loading: " << std::endl;
-    log_obj(obj);
-    std::cout << std::endl;
+    // std::cout << "name tree loading: " << std::endl;
+    // log_obj(obj);
+    // std::cout << std::endl;
 
     if (obj == nullptr) {
         std::cerr << "Name tree object is null" << std::endl;
