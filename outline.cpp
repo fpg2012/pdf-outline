@@ -244,6 +244,9 @@ void OutlineNode::from_json(const nlohmann::json &j, const PageMap *page_map) {
         }
         if (j.contains("destination")) {
             destination.from_json(j["destination"], page_map);
+        } else if (j.contains("page")) {
+            int page = j["page"];
+            destination.init_default(page_map, page);
         }
         if (j.contains("chd")) {
             for (const auto &child : j["chd"]) {

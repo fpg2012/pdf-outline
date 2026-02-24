@@ -87,7 +87,7 @@ void Destination::from_json(const nlohmann::json &j, const PageMap *page_map) {
         free(parser);
         free(lexer);
     } else {
-        init_default();
+        init_default(page_map);
     }
 
     if (j.contains("page")) {
@@ -125,8 +125,8 @@ pindf_pdf_obj *Destination::to_obj(pindf_doc* doc, const PageMap *page_map) cons
 }
 
 /// dest_obj default to [ 0 0 R /Fit ]
-void Destination::init_default() {
-    page = -1;
+void Destination::init_default(const PageMap *page_map, int page_no) {
+    page = page_no;
     name = "";
     dest_obj = pindf_pdf_obj_new(PINDF_PDF_ARRAY);
     dest_obj->content.array = pindf_vector_new(2, sizeof(pindf_pdf_obj*));
@@ -137,6 +137,14 @@ void Destination::init_default() {
         .obj_num = 0,
         .generation_num = 0,
     };
+
+    if (page_no != -1) {
+        int page_ref_obj_num = page_map->obj_nums[page-1];
+        page_ref->content.ref = {
+            .obj_num = page_ref_obj_num,
+            .generation_num = 0,
+        };
+    }
 
     // fit
     pindf_pdf_obj *fit_name_obj = pindf_pdf_obj_new(PINDF_PDF_NAME);

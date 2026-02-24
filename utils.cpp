@@ -222,10 +222,11 @@ pindf_pdf_obj *to_obj<pindf_pdf_obj*>(pindf_pdf_obj* value) {
 
 template<>
 pindf_pdf_obj *to_obj<const std::string&>(const std::string &value) {
-    pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_LTR_STR);
-    pindf_uchar_str *str = pindf_uchar_str_new();
-    pindf_uchar_str_init(str, value.length());
-    memcpy(str->p, value.c_str(), value.length());
-    obj->content.ltr_str = str;
+    pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_HEX_STR);
+    // pindf_uchar_str *str = pindf_uchar_str_new();
+    // pindf_uchar_str_init(str, value.length() + 10);
+    auto *str = pindf_uchar_str_from_cstr(value.c_str(), value.length());
+    // memcpy(str->p, value.c_str(), value.length());
+    obj->content.hex_str = str;
     return obj;
 }

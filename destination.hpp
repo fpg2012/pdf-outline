@@ -24,5 +24,5 @@ struct Destination {
 
     pindf_pdf_obj *to_obj(pindf_doc* doc, const PageMap *page_map) const;
 
-    void init_default();
+    void init_default(const PageMap *page_map, int page_no = -1);
 };

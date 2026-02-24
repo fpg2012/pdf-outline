@@ -89,10 +89,15 @@ int replace(const std::string &pdf_file, const std::string &input_file, const st
     pindf_doc *doc = parse_pdf(pdf_file.c_str());
 
     PageMap *page_map = get_pages(doc);
+
     OutlineNode new_outline;
     nlohmann::json j;
     in_json >> j;
     new_outline.from_json(j, page_map);
+
+    pindf_modif *modif = pindf_modif_new(doc->xref->size + 1);
+    new_outline.apply_modif(doc, modif, page_map);
+    doc->modif = modif;
 
     int ret = pindf_doc_save_modif(doc, out_pdf, true);
     if (ret != 0) {
