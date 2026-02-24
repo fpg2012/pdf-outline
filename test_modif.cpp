@@ -41,6 +41,10 @@ int main(int argc, char **argv) {
     new_outline.apply_modif(doc, modif, page_map);
     doc->modif = modif;
 
+    std::ofstream json_output("outline_modif.json");
+    json_output << new_outline.to_json().dump(2);
+    json_output.close();
+
     // print modif xref table
     FILE *modif_fp = fopen("modif_result.pdf", "wb");
     FILE *orig_fp = fopen(argv[1], "rb");

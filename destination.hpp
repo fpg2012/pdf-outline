@@ -23,4 +23,6 @@ struct Destination {
     void from_json(const nlohmann::json &j, const PageMap *page_map);
 
     pindf_pdf_obj *to_obj(pindf_doc* doc, const PageMap *page_map) const;
+
+    void init_default();
 };

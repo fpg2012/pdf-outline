@@ -373,32 +373,15 @@ void OutlineNode::apply_modif(pindf_doc *doc, pindf_modif *modif, const PageMap 
             .start_pos = 0,
         };
         obj_num_last = real_offset + node->offset;
-        pindf_modif_addentry(modif, ind_obj, real_offset + node->offset);
+        
+        if (node->offset == node->parent) {
+            // get original outline object num
+            auto *orig_outline_obj = get_outline_obj(doc);
+            int orig_outline_obj_num = orig_outline_obj->content.ref.obj_num;
+            ind_obj->obj_num = orig_outline_obj_num;
+            pindf_modif_addentry(modif, ind_obj, orig_outline_obj_num);
+        } else {
+            pindf_modif_addentry(modif, ind_obj, real_offset + node->offset);
+        }
     }
-
-    pindf_pdf_obj *root = pindf_dict_getvalue2(&doc->trailer, "/Root");
-    if (root == nullptr || root->obj_type != PINDF_PDF_REF) {
-        throw std::runtime_error("root object is invalid");
-    }
-    int root_num = root->content.ref.obj_num;
-    auto real_root = deref(doc, root);
-    if (real_root == nullptr || real_root->obj_type != PINDF_PDF_DICT) {
-        throw std::runtime_error("root object is not a dict");
-    }
-    
-    pindf_pdf_obj *new_outline_ref_obj = pindf_pdf_obj_new(PINDF_PDF_REF);
-    new_outline_ref_obj->content.ref = {
-        .obj_num = obj_num_last,
-        .generation_num = 0,
-    };
-    pindf_dict_set_value2(&real_root->content.dict, "/Outlines", new_outline_ref_obj);
-
-    auto *root_ind = new pindf_pdf_ind_obj{
-        .obj_num = root_num,
-        .generation_num = 0,
-        .obj = real_root,
-        .start_pos = 0,
-    };
-
-    pindf_modif_addentry(modif, root_ind, root_num);
 }

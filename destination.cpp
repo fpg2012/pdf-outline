@@ -59,39 +59,43 @@ nlohmann::json Destination::to_json() const {
 }
 
 void Destination::from_json(const nlohmann::json &j, const PageMap *page_map) {
+    if (j.contains("dest_arr")) {
+        std::string dest_arr_str = j["dest_arr"];
+    
+        auto parser = pindf_parser_new();
+        auto lexer = pindf_lexer_new();
+
+        std::cout << "parsing: " << dest_arr_str << std::endl;
+
+        pindf_pdf_obj *obj = nullptr;
+        // auto buffer = pindf_uchar_str_from_cstr(page_ref_str.c_str(), page_ref_str.length());
+        // pindf_parse_one_obj_from_buffer(parser, lexer, buffer, 0, &obj, NULL, PINDF_PDF_REF);
+        // pindf_uchar_str_destroy(buffer);
+        // free(buffer);
+        // page_obj = obj;
+
+        auto buffer = pindf_uchar_str_from_cstr(dest_arr_str.c_str(), dest_arr_str.length() + 1);
+        pindf_parse_one_obj_from_buffer(parser, lexer, buffer, 0, &obj, NULL, PINDF_PDF_ARRAY);
+        pindf_uchar_str_destroy(buffer);
+        free(buffer);
+        dest_obj = obj;
+        dest_arr = pindf_vector_to_std_vector<pindf_pdf_obj*>(dest_obj->content.array);
+
+        // clean up
+        pindf_lexer_clear(lexer);
+        pindf_parser_destroy(parser);
+        free(parser);
+        free(lexer);
+    } else {
+        init_default();
+    }
+
     if (j.contains("page")) {
         page = j["page"];
     }
     if (j.contains("name")) {
         name = j["name"];
     }
-    // std::string page_ref_str = j["page_ref"];
-    std::string dest_arr_str = j["dest_arr"];
-    
-    auto parser = pindf_parser_new();
-    auto lexer = pindf_lexer_new();
-
-    std::cout << "parsing: " << dest_arr_str << std::endl;
-
-    pindf_pdf_obj *obj = nullptr;
-    // auto buffer = pindf_uchar_str_from_cstr(page_ref_str.c_str(), page_ref_str.length());
-    // pindf_parse_one_obj_from_buffer(parser, lexer, buffer, 0, &obj, NULL, PINDF_PDF_REF);
-    // pindf_uchar_str_destroy(buffer);
-    // free(buffer);
-    // page_obj = obj;
-
-    auto buffer = pindf_uchar_str_from_cstr(dest_arr_str.c_str(), dest_arr_str.length() + 1);
-    pindf_parse_one_obj_from_buffer(parser, lexer, buffer, 0, &obj, NULL, PINDF_PDF_ARRAY);
-    pindf_uchar_str_destroy(buffer);
-    free(buffer);
-    dest_obj = obj;
-    dest_arr = pindf_vector_to_std_vector<pindf_pdf_obj*>(dest_obj->content.array);
-
-    // clean up
-    pindf_lexer_clear(lexer);
-    pindf_parser_destroy(parser);
-    free(parser);
-    free(lexer);
 }
 
 pindf_pdf_obj *Destination::to_obj(pindf_doc* doc, const PageMap *page_map) const {
@@ -99,10 +103,10 @@ pindf_pdf_obj *Destination::to_obj(pindf_doc* doc, const PageMap *page_map) cons
     
     int page_obj_num = page_map->obj_nums[page-1];
 
-    if (page_obj_num == dest_arr[0]->content.ref.obj_num) {
-        // no modification
-        return dest_obj;
-    }
+    // if (page_obj_num == dest_arr[0]->content.ref.obj_num) {
+    //     // no modification
+    //     return dest_obj;
+    // }
 
     auto page_ref = pindf_pdf_obj_new(PINDF_PDF_REF);
     page_ref->content.ref = (pindf_pdf_ref){
@@ -110,12 +114,36 @@ pindf_pdf_obj *Destination::to_obj(pindf_doc* doc, const PageMap *page_map) cons
         .generation_num = 0,
     };
 
-    auto *vec = pindf_vector_new(4, sizeof(pindf_pdf_obj*));
+    auto *vec = pindf_vector_new(dest_arr.size(), sizeof(pindf_pdf_obj*));
     pindf_vector_append(vec, &page_ref);
-    for (int i = 1; i < 4; ++i) {
+    for (int i = 1; i < dest_arr.size(); ++i) {
         pindf_vector_append(vec, (void*)(dest_arr.data() + i));
     }
 
     obj->content.array = vec;
     return obj;
+}
+
+/// dest_obj default to [ 0 0 R /Fit ]
+void Destination::init_default() {
+    page = -1;
+    name = "";
+    dest_obj = pindf_pdf_obj_new(PINDF_PDF_ARRAY);
+    dest_obj->content.array = pindf_vector_new(2, sizeof(pindf_pdf_obj*));
+
+    // page obj
+    pindf_pdf_obj *page_ref = pindf_pdf_obj_new(PINDF_PDF_REF);
+    page_ref->content.ref = {
+        .obj_num = 0,
+        .generation_num = 0,
+    };
+
+    // fit
+    pindf_pdf_obj *fit_name_obj = pindf_pdf_obj_new(PINDF_PDF_NAME);
+    fit_name_obj->content.name = pindf_uchar_str_from_cstr("/Fit", strlen("/Fit"));
+
+    pindf_vector_append(dest_obj->content.array, &page_ref);
+    pindf_vector_append(dest_obj->content.array, &fit_name_obj);
+
+    dest_arr = pindf_vector_to_std_vector<pindf_pdf_obj*>(dest_obj->content.array);
 }
