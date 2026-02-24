@@ -292,7 +292,7 @@ void OutlineNode::apply_modif(pindf_doc *doc, pindf_modif *modif, const PageMap 
 
     int real_offset = modif->max_obj_num + 1;
 
-    int obj_num_last = 0;
+    // int obj_num_last = 0;
     
     for (auto node : nodes) {
         pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_DICT);
@@ -372,7 +372,7 @@ void OutlineNode::apply_modif(pindf_doc *doc, pindf_modif *modif, const PageMap 
             .obj = obj,
             .start_pos = 0,
         };
-        obj_num_last = real_offset + node->offset;
+        // obj_num_last = real_offset + node->offset;
         
         if (node->offset == node->parent) {
             // get original outline object num
