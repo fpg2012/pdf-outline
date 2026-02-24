@@ -19,13 +19,14 @@ endif
 
 all:
 	make -C pindf BUILD_TYPE=$(BUILD_TYPE)
-	$(CC) $(CXXFLAGS) $(LD_FLAGS) $(SRC) main.cpp -o pdf-outline
+	$(CC) $(CXXFLAGS) $(LD_FLAGS) $(SRC) test_extract.cpp -o test_extract
 	$(CC) $(CXXFLAGS) $(LD_FLAGS) $(SRC) test_modif.cpp -o test_modif
 # 	$(CC) $(CXXFLAGS) $(LD_FLAGS) -o pdf-outline *.o
 
 clean:
 	make -C pindf BUILD_TYPE=$(BUILD_TYPE) clean
-	rm -f pdf-outline
+	rm -f test_extract
+	rm -f test_modif
 	rm -f *.o
 	rm -f *.pch
 	rm -rf *.dSYM
