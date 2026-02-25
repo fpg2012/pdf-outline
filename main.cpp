@@ -55,7 +55,13 @@ int extract(const std::string &pdf_file, const std::string &output_file) {
     
     std::ofstream out(output_file, std::ios::out | std::ios::binary);
     out << outline->to_json().dump(2);
+
     out.close();
+    delete page_map;
+    delete name_tree;
+    delete outline;
+    pindf_doc_destroy(doc);
+    free(doc);
 
     return OK;
 }
@@ -105,7 +111,13 @@ int replace(const std::string &pdf_file, const std::string &input_file, const st
         fclose(out_pdf);
         return SaveFailed;
     }
+
     fclose(out_pdf);
+    pindf_doc_destroy(doc);
+    free(doc);
+    delete page_map;
+    in_json.close();
+
     return OK;
 }
 

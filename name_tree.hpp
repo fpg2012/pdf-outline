@@ -10,6 +10,7 @@ extern "C" {
 
 struct NameTree {
     std::unordered_map<std::string, pindf_pdf_obj*> names_to_page;
+    /// borrow from underlying document
     pindf_pdf_obj *name_tree_obj;
 
     void from_obj(pindf_doc *doc, pindf_pdf_obj *obj);
