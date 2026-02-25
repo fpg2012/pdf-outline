@@ -18,6 +18,8 @@ replace outline with given json
 
 ## build
 
+Install dependencies: `icu4c`, `zlib`, `nlohmann_json`
+
 Clone this repository.
 
 ```bash
