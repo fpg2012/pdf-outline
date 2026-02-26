@@ -13,3 +13,4 @@ pdf-outline
 test_modif
 *.txt
 test_*
+build/
