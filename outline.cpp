@@ -263,11 +263,11 @@ int to_temp(const OutlineNode *outline_node, std::vector<TempOutlineNode*> &node
     std::vector<TempOutlineNode*> temp_vec;
     if (outline_node->children.size() > 0) {
         auto new_offset = offset;
-        for (int i = 0; i < outline_node->children.size(); ++i) {
+        for (auto i = 0u; i < outline_node->children.size(); ++i) {
             new_offset = to_temp(&outline_node->children[i], nodes, new_offset);
             temp_vec.push_back(nodes[new_offset]);
         }
-        for (int i = 0; i < temp_vec.size(); ++i) {
+        for (auto i = 0u; i < temp_vec.size(); ++i) {
             if (i > 0)
                 temp_vec[i]->last = temp_vec[i-1]->offset;
             if (i < temp_vec.size() - 1)

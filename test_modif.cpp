@@ -6,7 +6,6 @@
 #include <fstream>
 
 #include "utils.hpp"
-#include "name_tree.hpp"
 #include "outline.hpp"
 #include "page_tree.hpp"
 #include <nlohmann/json.hpp>
@@ -29,7 +28,6 @@ int main(int argc, char **argv) {
     }
 
     PageMap *page_map = get_pages(doc);
-    NameTree *name_tree = get_name_tree(doc);
 
     OutlineNode new_outline;
     std::fstream json_file(argv[2]);

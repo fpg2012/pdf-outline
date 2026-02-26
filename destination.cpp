@@ -116,7 +116,7 @@ pindf_pdf_obj *Destination::to_obj(pindf_doc* doc, const PageMap *page_map) cons
 
     auto *vec = pindf_vector_new(dest_arr.size(), sizeof(pindf_pdf_obj*));
     pindf_vector_append(vec, &page_ref);
-    for (int i = 1; i < dest_arr.size(); ++i) {
+    for (auto i = 1u; i < dest_arr.size(); ++i) {
         pindf_vector_append(vec, (void*)(dest_arr.data() + i));
     }
 
