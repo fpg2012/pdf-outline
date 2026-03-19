@@ -194,34 +194,30 @@ std::string pindf_uchar_str_to_string(pindf_uchar_str *str) {
     return std::string((char*)str->p, str->len);
 }
 
-template<>
-pindf_pdf_obj *to_obj<int>(int value) {
+pindf_pdf_obj *to_obj(int value) {
     pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_INT);
     obj->content.num = value;
     return obj;
 }
 
-template<>
-pindf_pdf_obj *to_obj<double>(double value) {
+pindf_pdf_obj *to_obj(double value) {
     pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_REAL);
     obj->content.real_num = value;
     return obj;
 }
 
-template<>
-pindf_pdf_obj *to_obj<float>(float value) {
+pindf_pdf_obj *to_obj(float value) {
     pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_REAL);
     obj->content.real_num = (double)value;
     return obj;
 }
 
-template<>
-pindf_pdf_obj *to_obj<pindf_pdf_obj*>(pindf_pdf_obj* value) {
+pindf_pdf_obj *to_obj(pindf_pdf_obj* value) {
     return value;
 }
 
-template<>
-pindf_pdf_obj *to_obj<const std::string&>(const std::string &value) {
+
+pindf_pdf_obj *to_obj(const std::string &value) {
     pindf_pdf_obj *obj = pindf_pdf_obj_new(PINDF_PDF_HEX_STR);
     // pindf_uchar_str *str = pindf_uchar_str_new();
     // pindf_uchar_str_init(str, value.length() + 10);

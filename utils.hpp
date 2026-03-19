@@ -34,10 +34,11 @@ std::vector<T> pindf_vector_to_std_vector(pindf_vector *vector) {
     return stdvec;
 }
 
-template<typename T>
-pindf_pdf_obj *to_obj(T value) {
-    throw std::runtime_error("not implemented");
-}
+pindf_pdf_obj *to_obj(int value);
+pindf_pdf_obj *to_obj(double value);
+pindf_pdf_obj *to_obj(float value);
+pindf_pdf_obj *to_obj(pindf_pdf_obj* value);
+pindf_pdf_obj *to_obj(const std::string &value);
 
 pindf_pdf_obj *deref(pindf_doc *doc, pindf_pdf_obj *obj);
 

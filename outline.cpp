@@ -305,7 +305,7 @@ void OutlineNode::apply_modif(pindf_doc *doc, pindf_modif *modif, const PageMap 
         {
             if (!node->node->title.empty()) {
                 auto encoded_title = encode_text_string(node->node->title);
-                pindf_dict_set_value2(&temp_dict, "/Title", to_obj<const std::string&>(encoded_title));
+                pindf_dict_set_value2(&temp_dict, "/Title", to_obj(encoded_title));
             }
 
             if (node->first != -1) {
@@ -323,7 +323,7 @@ void OutlineNode::apply_modif(pindf_doc *doc, pindf_modif *modif, const PageMap 
                 };
                 pindf_dict_set_value2(&temp_dict, "/Last", last_obj);
 
-                pindf_pdf_obj *count_obj = to_obj<int>(children.size());
+                pindf_pdf_obj *count_obj = to_obj((int)children.size());
                 pindf_dict_set_value2(&temp_dict, "/Count", count_obj);
             }
 
